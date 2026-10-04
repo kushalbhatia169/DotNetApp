@@ -1,0 +1,23 @@
+[
+  {
+    "id": "1",
+    "name": "Mechanical Keyboard",
+    "price": 4500,
+    "categoryId": "101",
+    "stock": 15
+  },
+  {
+    "id": "2",
+    "name": "Gaming Mouse",
+    "price": 2200,
+    "categoryId": "101",
+    "stock": 30
+  },
+  {
+    "id": "3",
+    "name": "Ergonomic Chair",
+    "price": 12000,
+    "categoryId": "102",
+    "stock": 5
+  }
+]
