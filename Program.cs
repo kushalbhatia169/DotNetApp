@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MyApp.Api;
 using MyApp.Api.GraphQL;
+using MyApp.Api.GraphQL.Mutations;
 using MyApp.Api.GraphQL.Queries;
+using MyApp.Api.Repositories.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Security.Claims;
@@ -37,14 +39,18 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // Register Services with concrete file paths
-builder.Services.AddSingleton<IProductRepository>(sp => new ProductRepository(System.IO.Path.Combine(builder.Environment.ContentRootPath, "Data", "products.json")));
-builder.Services.AddScoped<ICategoryRepository>(sp => new CategoryRepository(System.IO.Path.Combine(builder.Environment.ContentRootPath, "Data", "categories.json")));
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+
+
+// Register GraphQL Engine (Hot Chocolate)
 
 // Register GraphQL Engine (Hot Chocolate)
 builder.Services
     .AddGraphQLServer()
     .AddAuthorization()
     .AddQueryType<ProductQuery>()
+    .AddMutationType<ProductMutation>()
     .AddType<ProductObjectType>()
     .AddType<CategoryObjectType>();
 

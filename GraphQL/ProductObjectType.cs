@@ -1,4 +1,5 @@
 using HotChocolate.Types;
+using MyApp.Api.Repositories.Interfaces;
 
 namespace MyApp.Api.GraphQL
 {

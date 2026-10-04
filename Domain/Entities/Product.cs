@@ -2,10 +2,8 @@ using System.Text.Json.Serialization;
 
 namespace MyApp.Api
 {
-    public class Product
+    public class Product : BaseEntity
     {
-        [JsonPropertyName("id")]
-        public string Id { get; set; } = string.Empty;
         [JsonPropertyName("name")]
         public required string Name { get; set; } = string.Empty;
         [JsonPropertyName("price")]

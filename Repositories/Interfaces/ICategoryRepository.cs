@@ -1,8 +1,8 @@
-namespace MyApp.Api
+using MyApp.Api.Infrastructure.Repositories.Common;
+
+namespace MyApp.Api.Repositories.Interfaces;
+
+public interface ICategoryRepository : IGenericRepository<Category>
 {
-    public interface ICategoryRepository
-    {
-        Task<Category?> GetByIdAsync(string id, CancellationToken ct);
-        Task<IEnumerable<Category>> GetByKeysAsync(IEnumerable<string> keys, CancellationToken ct);
-    }
+    Task<IEnumerable<Category>> GetByKeysAsync(IEnumerable<string> keys, CancellationToken ct = default);
 }

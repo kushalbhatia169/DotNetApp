@@ -1,70 +1,42 @@
-using System.Text.Json;
+using MyApp.Api.Infrastructure.Repositories.Common;
+using MyApp.Api.Repositories.Interfaces;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.IO;
+using Path = System.IO.Path;
 
 namespace MyApp.Api
 {
-    public class ProductRepository(string filePath): IProductRepository
+    public class ProductRepository(Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, ICategoryRepository categoryRepository) : GenericJsonRepository<Product>(Path.Combine(env.ContentRootPath, "Data", "products.json")), IProductRepository
     {
-        private readonly string _filePath = filePath;
-        private static readonly SemaphoreSlim _semaphore = new(1, 1);
+        private readonly ICategoryRepository _categoryRepository = categoryRepository ?? throw new ArgumentNullException(nameof(categoryRepository));
 
-        public async Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken)
+        public override async Task AddAsync(Product product, CancellationToken cancellationToken = default)
         {
-            if (!File.Exists(_filePath)) return [];
+            var products = await GetAllAsync(cancellationToken);
 
-            using var stream = File.OpenRead(_filePath);
-            var products = await JsonSerializer.DeserializeAsync<List<Product>>(stream, cancellationToken: cancellationToken);
-            return products ?? [];
-        }
+            var category = await _categoryRepository.GetByIdAsync(product.CategoryId, cancellationToken);
+            if (category == null)
+            {
+                throw new InvalidOperationException($"Category with ID '{product.CategoryId}' does not exist.");
+            }
 
-        public async Task<List<Product>> GetProductsAsync(CancellationToken cancellationToken)
-        {
-            await _semaphore.WaitAsync();
-            try
+            if (products.Any(p => p.Name == product.Name))
             {
-                if (!File.Exists(_filePath))
-                {
-                    return [];
-                }
-                var json = File.OpenRead(_filePath);
-                return await JsonSerializer.DeserializeAsync<List<Product>>(json, cancellationToken: cancellationToken) ?? [];
+                throw new InvalidOperationException($"A product with the name '{product.Name}' already exists.");
             }
-            finally
-            {
-                _semaphore.Release();
-            }
-        }
 
-        public async Task SaveProductsAsync(List<Product> products, CancellationToken cancellationToken)
-        {
-            await _semaphore.WaitAsync();
-            try
-            {
-                var json = JsonSerializer.Serialize(products);
-                await File.WriteAllTextAsync(_filePath, json, cancellationToken);
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
-        }
-
-        public async Task AddProductAsync(Product product, CancellationToken cancellationToken)
-        {
-            var products = await GetProductsAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(product.Id)) product.Id = Guid.NewGuid().ToString();
             products.Add(product);
-            await SaveProductsAsync(products, cancellationToken);
+            await SaveAllAsync(products, cancellationToken);
         }
 
-        public async Task<Product?> GetProductByIdAsync(string id, CancellationToken cancellationToken)
+        // New specific call for Product
+        public async Task<List<Product>> GetProductsByCategoryIdAsync(string categoryId, CancellationToken ct = default)
         {
-            var products = await GetProductsAsync(cancellationToken);
-            return products.FirstOrDefault(p => p.Id.ToString() == id);
-        }
-
-        public async Task<Product?> GetProductByIdAsync(Guid id, CancellationToken cancellationToken)
-        {
-            var products = await GetProductsAsync(cancellationToken);
-            return products.FirstOrDefault(p => p.Id.ToString() == id.ToString());
+            var products = await GetAllAsync(ct);
+            return products.Where(p => p.CategoryId.Equals(categoryId, StringComparison.OrdinalIgnoreCase)).ToList();
         }
     }
 }

@@ -1,12 +1,9 @@
-namespace MyApp.Api
+using MyApp.Api.Infrastructure.Repositories.Common;
+
+namespace MyApp.Api.Repositories.Interfaces;
+
+public interface IProductRepository : IGenericRepository<Product>
 {
-    public interface IProductRepository
-    {
-        Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken ct);
-        Task<Product?> GetProductByIdAsync(string id, CancellationToken ct);
-        Task<Product?> GetProductByIdAsync(Guid id, CancellationToken ct);
-        Task<List<Product>> GetProductsAsync(CancellationToken ct);
-        Task SaveProductsAsync(List<Product> products, CancellationToken ct);
-        Task AddProductAsync(Product product, CancellationToken ct);
-    }
+    // Sirf Product-specific new calls yahan define hongi
+    Task<List<Product>> GetProductsByCategoryIdAsync(string categoryId, CancellationToken ct = default);
 }
