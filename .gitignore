@@ -17,6 +17,9 @@
 mono_crash.*
 
 # Build results
+Data/*.db
+Data/*.db-shm
+Data/*.db-wal
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/

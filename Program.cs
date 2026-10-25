@@ -2,19 +2,24 @@ using HotChocolate.AspNetCore;
 using HotChocolate.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using MyApp.Api;
-using MyApp.Api.GraphQL;
 using MyApp.Api.GraphQL.Mutations;
 using MyApp.Api.GraphQL.Queries;
-using MyApp.Api.Repositories.Interfaces;
+using MyApp.Api.GraphQL.Types;
+using MyApp.Application.Abstractions;
+using MyApp.Application.Services;
+using MyApp.Infrastructure;
+using MyApp.Infrastructure.Data;
 using System.IdentityModel.Tokens.Jwt;
-using System.IO;
 using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var jwtSecret = builder.Configuration["Jwt:Secret"]!;
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret) || Encoding.UTF8.GetByteCount(jwtSecret) < 32)
+{
+    throw new InvalidOperationException("Configure Jwt:Secret with at least 32 bytes using a secret store or environment variable.");
+}
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -38,9 +43,8 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// Register Services with concrete file paths
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddScoped<ICatalogService, CatalogService>();
 
 
 // Register GraphQL Engine (Hot Chocolate)
@@ -50,12 +54,16 @@ builder.Services
     .AddGraphQLServer()
     .AddAuthorization()
     .AddQueryType<ProductQuery>()
-    .AddMutationType<ProductMutation>()
+    .AddTypeExtension<CategoryQuery>()
+    .AddMutationType(mutation => mutation.Name(OperationTypeNames.Mutation))
+    .AddTypeExtension<ProductMutation>()
+    .AddTypeExtension<CategoryMutation>()
     .AddType<ProductObjectType>()
     .AddType<CategoryObjectType>();
 
 var app = builder.Build();
 
+await DatabaseBootstrapper.InitializeAsync(app.Services, app.Environment.ContentRootPath);
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -65,8 +73,9 @@ app.MapGraphQL(); // Default route: /graphql
 
 
 
-// Temporary Endpoint to Get Valid JWT Token for Testing
-app.MapGet("/get-test-token", (IConfiguration config) =>
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/get-test-token", (IConfiguration config) =>
 {
     var secretKey = config["Jwt:Secret"]!;
     var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
@@ -87,7 +96,8 @@ app.MapGet("/get-test-token", (IConfiguration config) =>
         signingCredentials: creds
     );
 
-    return Results.Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
-});
+            return Results.Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
+        });
+    }
 
-app.Run();
+    app.Run();

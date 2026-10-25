@@ -1,10 +1,9 @@
 using System.Text.Json.Serialization;
 
-namespace MyApp.Api
+namespace MyApp.Domain.Entities;
+
+public class Category : BaseEntity
 {
-    public class Category : BaseEntity
-    {
-        [JsonPropertyName("name")]
-        public required string Name { get; set; } = string.Empty;
-    }
+    [JsonPropertyName("name")]
+    public required string Name { get; set; } = string.Empty;
 }

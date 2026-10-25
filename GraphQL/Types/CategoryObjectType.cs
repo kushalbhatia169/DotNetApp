@@ -1,5 +1,5 @@
-﻿using MyApp.Api;
-using HotChocolate.Types;
+﻿using HotChocolate.Types;
+using MyApp.Domain.Entities;
 
 public class CategoryObjectType : ObjectType<Category>
 {

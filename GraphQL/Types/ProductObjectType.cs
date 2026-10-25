@@ -1,7 +1,8 @@
 using HotChocolate.Types;
-using MyApp.Api.Repositories.Interfaces;
+using MyApp.Application.Abstractions.Repositories;
+using MyApp.Domain.Entities;
 
-namespace MyApp.Api.GraphQL
+namespace MyApp.Api.GraphQL.Types
 {
     public class ProductObjectType : ObjectType<Product>
     {

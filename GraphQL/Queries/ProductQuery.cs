@@ -1,27 +1,37 @@
 using HotChocolate.Authorization;
-using MyApp.Api.Repositories.Interfaces;
+using MyApp.Application.Abstractions.Repositories;
+using MyApp.Domain.Entities;
 
-namespace MyApp.Api.GraphQL.Queries
+namespace MyApp.Api.GraphQL.Queries;
+
+public sealed class ProductQuery
 {
-    // High-performance Hot Chocolate Extensions
-    public class ProductQuery
-    {
-        [Authorize]
-        public async Task<IEnumerable<Product>> GetProductsAsync(
-            IProductRepository repository,
-            CancellationToken ct)
-        {
-            return await repository.GetAllAsync(ct);
-        }
+    [Authorize]
+    public Task<List<Product>> GetProductsAsync(IProductRepository repository, CancellationToken ct) =>
+        repository.GetAllAsync(ct);
 
-        // Role-based Auth: Token ke andar Role Claim = 'Admin' hona chahiye
-        [Authorize(Roles = new[] { "Admin" })]
-        public async Task<Product?> GetProductByIdAsync(
-            string id,
-            IProductRepository repository,
-            CancellationToken ct)
-        {
-            return await repository.GetByIdAsync(id, ct);
-        }
+    [Authorize]
+    public Task<Product?> GetProductByIdAsync(string id, IProductRepository repository, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            throw new ArgumentException("Product ID cannot be null or whitespace.", nameof(id));
+
+        return repository.GetByIdAsync(id, ct);
+    }
+
+    [Authorize]
+    public Task<List<Product>> GetProductsByIdsAsync(List<string> ids, IProductRepository repository, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        return repository.GetByKeysAsync(ids, ct);
+    }
+
+    [Authorize]
+    public Task<List<Product>> GetProductsByCategoryIdAsync(string categoryId, IProductRepository repository, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(categoryId))
+            throw new ArgumentException("Category ID cannot be null or whitespace.", nameof(categoryId));
+
+        return repository.GetProductsByCategoryIdAsync(categoryId, ct);
     }
 }
